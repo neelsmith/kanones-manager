@@ -34,14 +34,10 @@ You can keep these four items anywhere you like in your local file system if you
 ```
 .
 ├── Kanones.jl (a copy or clone of the Kanones.jl repository)
-└── kanones-manager (or your own directory)
+└── kanones-manager (or your own directory name)
     ├── morphology
     │   ├── datatables (a standard Kanones dataset of delimited-text files)
     │   │   └── stems-tables
-    │   │       ├── adjectives
-    │   │       ├── nouns
-    │   │       ├── verbs-compound
-    │   │       └── verbs-simplex
     │   └── morphology-current.csv (the file of precomputed analyses)
     └── pluto
         └── kanones-manager.jl (the pluto notebook)
