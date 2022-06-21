@@ -70,6 +70,7 @@ kanones = joinpath("..", "..", "Kanones.jl")
 # ╔═╡ ff1d7fce-f0a6-11ec-1ea9-ad69df1ccad5
 md"""
 # Manage local morphology dataset
+
 """
 
 # ╔═╡ 1306c387-acab-42c8-9a7b-86b5442719ee
@@ -155,8 +156,25 @@ local_df = begin
 	readlocal()
 end
 
+# ╔═╡ f1fdacc2-8ad4-4a63-9bb0-9d644839e686
+# CSV header with column names begins on first row after YAML header ends.
+begin
+	headeridx = 0
+	preview = open(preparsed_data) do datafile
+		linenum = 0
+		for l in eachline(preparsed_data)
+        	linenum += 1
+			if l == "---" && linenum > 1
+				headeridx = linenum + 1
+				break
+			end
+		end
+	end
+	headeridx
+end
+
 # ╔═╡ de2d20d4-ef22-4541-81ef-1ae2dfedcb9a
-release_df = CSV.read(preparsed_data, DataFrame)
+release_df = CSV.read(preparsed_data, DataFrame, header = headeridx)
 
 # ╔═╡ a6a58d43-a5b4-4ce0-914f-19d8e5557dbf
 combodf = vcat(local_df, release_df, cols = :union)
@@ -193,6 +211,41 @@ isempty(goats) ? md"" :  Markdown.parse("Failed to analyze:\n\n" * join(goats,"\
 # ╔═╡ 8e28cb65-666b-48ca-831d-91d3e4752e5c
 isempty(sheep) ? md"" : Markdown.parse("Analyses:\n\n" * join(sheep,"\n"))
 	
+
+# ╔═╡ 32823b4c-a783-4034-94d7-5975cd38e9cf
+(kanonesversion, lsjminingversion) = begin
+	
+	
+	open(preparsed_data) do datafile
+		kversion = ""
+		lsjversion = ""
+		linenum = 0
+		for l in eachline(datafile)
+        	linenum += 1
+			if startswith(l, "kanones_version")
+				kversion = l
+			elseif startswith(l, "lsjmining_version")
+				lsjversion = l
+			end
+			if (! isempty(kversion)) && (! isempty(lsjversion))
+				break
+			end
+		end
+		(kversion, lsjversion)
+	end
+	
+end
+
+# ╔═╡ da4d9984-8d64-4404-a1db-cc8ebc5c08ee
+md"""
+
+!!! note "Version info: built with...."
+
+
+
+- **Kanones**:  *$(kanonesversion)*
+- **LSJMining**: *$(lsjminingversion)*
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -823,6 +876,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╟─af87b45b-7c8e-4ee5-bb0b-aeba3d9fbe66
 # ╟─20cb2bd1-6d78-4a12-8a8a-b42cf5cb3768
 # ╟─7d439b45-b011-42a0-b1d8-3f6f15291821
+# ╟─da4d9984-8d64-4404-a1db-cc8ebc5c08ee
 # ╟─ff1d7fce-f0a6-11ec-1ea9-ad69df1ccad5
 # ╟─1306c387-acab-42c8-9a7b-86b5442719ee
 # ╟─8ba0f723-b6af-4eb8-b281-4678a4ceafe6
@@ -846,5 +900,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╟─d4520a66-f35c-4013-b333-a2437f220dd1
 # ╠═de2d20d4-ef22-4541-81ef-1ae2dfedcb9a
 # ╠═a6a58d43-a5b4-4ce0-914f-19d8e5557dbf
+# ╠═f1fdacc2-8ad4-4a63-9bb0-9d644839e686
+# ╟─32823b4c-a783-4034-94d7-5975cd38e9cf
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
