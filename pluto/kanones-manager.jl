@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.8
+# v0.19.9
 
 using Markdown
 using InteractiveUtils
@@ -60,9 +60,21 @@ if showconfig
 """
 else 
 	md"""
-!!! tip "Check box above to see instructions for configuring notebook"	
+!!! tip "Check the box above to see detailed instructions for configuring this notebook"	
+
+    
+    - `preparsed_data`: a (large!) `.csv` file with parses for literary Greek vocabulary in LSJ
+    - `local_data` : directory with your supplementary morphology data (e.g., proper names)	
+	- `kanones`:  a copy of the Kanones github repository
 	"""
 end
+
+# ╔═╡ e9ef6336-408f-4dfc-9369-5977af9c1862
+preparsed_data =  joinpath("..", "morphology", "morphology-current.csv")
+
+# ╔═╡ 7ee03e72-99cb-4491-a27c-66d9319fdc1a
+# ╠═╡ show_logs = false
+local_data = joinpath("..", "morphology", "datatables")
 
 # ╔═╡ 7d439b45-b011-42a0-b1d8-3f6f15291821
 kanones = joinpath("..", "..", "Kanones.jl")
@@ -78,7 +90,7 @@ md"""
 !!! tip "Instructions"
 
     - Paste or type text to analyze in the text box below.
-    - You can add vocabulary entries to the Kanones data in the `morphology/datatables`
+    - You can add vocabulary entries to the Kanones data in the directory defined above for `local_data`
     - Use the `Reload local data` button to load new vocabulary data
 
 
@@ -96,18 +108,43 @@ md"""
 
 """
 
-# ╔═╡ e9ef6336-408f-4dfc-9369-5977af9c1862
-preparsed_data =  joinpath("..", "morphology", "morphology-current.csv")
-
 # ╔═╡ 061e4882-2f2e-4b05-a479-64b97aa2b9df
 ortho = literaryGreek()
 
-# ╔═╡ 79186d4f-4f9f-4c32-b2fc-071e25476f29
-rulesds = joinpath(kanones, "datasets", "literarygreek-rules")
+# ╔═╡ 32823b4c-a783-4034-94d7-5975cd38e9cf
+(kanonesversion, lsjminingversion) = begin
+	
+	
+	open(preparsed_data) do datafile
+		kversion = ""
+		lsjversion = ""
+		linenum = 0
+		for l in eachline(datafile)
+        	linenum += 1
+			if startswith(l, "kanones_version")
+				kversion = l
+			elseif startswith(l, "lsjmining_version")
+				lsjversion = l
+			end
+			if (! isempty(kversion)) && (! isempty(lsjversion))
+				break
+			end
+		end
+		(kversion, lsjversion)
+	end
+	
+end
+
+# ╔═╡ da4d9984-8d64-4404-a1db-cc8ebc5c08ee
+md"""
+
+!!! note "Version info: built with...."
 
 
-# ╔═╡ 301d5f87-8cea-4275-b4a6-ed7687423f1e
-lsjds = joinpath(kanones, "datasets", "lsj-vocab")
+
+- **Kanones**:  *$(kanonesversion)*
+- **LSJMining**: *$(lsjminingversion)*
+"""
 
 # ╔═╡ 62e034d3-70d4-4088-b6b5-c8994da9e0cc
 md"""
@@ -116,45 +153,34 @@ md"""
 
 # ╔═╡ 9970ffb6-3075-4014-bdd9-aa560eac52d8
 md"""
-!!! note "Loading data"
+!!! note "Local data files"
 
-    Data sources loaded from local file system:
 
-    - `currentlitgreek`: `csv` file with parses for literary Greek parses
-    - `rulesds`:  a copy of the Kanones dataset defining basic inflectional rules for literary Greek
-    - `lysds` : directory with Kanones.dataset with supplementary morphology for Lysias (e.g., proper names)
 """
 
 # ╔═╡ f2a8da64-ca42-4765-a3de-385e1ef5a238
 # ╠═╡ show_logs = false
 lexicon = Kanones.lemmatadict()
 
-# ╔═╡ 7ee03e72-99cb-4491-a27c-66d9319fdc1a
-# ╠═╡ show_logs = false
-lysds = joinpath("..", "morphology", "datatables")
+# ╔═╡ 301d5f87-8cea-4275-b4a6-ed7687423f1e
+lsjds = joinpath(kanones, "datasets", "lsj-vocab")
 
-# ╔═╡ d4520a66-f35c-4013-b333-a2437f220dd1
-"Mindless generation of a DataFrame of analyses from a Kanones.Dataset by turning a string parser's entries into a DF source"
-function simpleDF(ds::Kanones.Dataset)
-	sp = stringParser(ds)
-	csvsrc = "Token,Lexeme,Form,Stem,Rule\n" * replace(join(sp.entries,"\n"), "|" => ",")	 * "\n"
-	CSV.read(IOBuffer(csvsrc), DataFrame)
-end
+# ╔═╡ 79186d4f-4f9f-4c32-b2fc-071e25476f29
+rulesds = joinpath(kanones, "datasets", "literarygreek-rules")
 
-# ╔═╡ a61d1226-ed4b-4fb4-89e5-d143bd773f83
-# ╠═╡ show_logs = false
-"""Read local dataset files and create a DataFrame of all possible parses.
+
+# ╔═╡ 8014ffff-ee16-4cf2-b8cd-bfe9af106fc7
+md"""!!! note "DataFrames"
+
+    1. `local_df` is built from data in your local file system
+    2. `release_df` is loaded from the csv file with precomputed parses
+    3. `combo_df` merges data frames 1 & 2
 """
-function readlocal()
-	[rulesds, lsjds, lysds] |> dataset |> simpleDF
-end
 
-# ╔═╡ a04b5782-09ea-4865-ac94-640d50cd1adc
-# ╠═╡ show_logs = false
-local_df = begin
-	reload
-	readlocal()
-end
+# ╔═╡ 11c25b1a-807d-4bba-bdc3-ae300e13462b
+md"""
+!!! note "Functions to load and format data"
+"""
 
 # ╔═╡ f1fdacc2-8ad4-4a63-9bb0-9d644839e686
 # CSV header with column names begins on first row after YAML header ends.
@@ -175,6 +201,29 @@ end
 
 # ╔═╡ de2d20d4-ef22-4541-81ef-1ae2dfedcb9a
 release_df = CSV.read(preparsed_data, DataFrame, header = headeridx)
+
+# ╔═╡ d4520a66-f35c-4013-b333-a2437f220dd1
+"Mindless generation of a DataFrame of analyses from a Kanones.Dataset by turning a string parser's entries into a DF source"
+function simpleDF(ds::Kanones.Dataset)
+	sp = stringParser(ds)
+	csvsrc = "Token,Lexeme,Form,Stem,Rule\n" * replace(join(sp.entries,"\n"), "|" => ",")	 * "\n"
+	CSV.read(IOBuffer(csvsrc), DataFrame)
+end
+
+# ╔═╡ a61d1226-ed4b-4fb4-89e5-d143bd773f83
+# ╠═╡ show_logs = false
+"""Read local dataset files and create a DataFrame of all possible parses.
+"""
+function readlocal()
+	[rulesds, lsjds, local_data] |> dataset |> simpleDF
+end
+
+# ╔═╡ a04b5782-09ea-4865-ac94-640d50cd1adc
+# ╠═╡ show_logs = false
+local_df = begin
+	reload
+	readlocal()
+end
 
 # ╔═╡ a6a58d43-a5b4-4ce0-914f-19d8e5557dbf
 combodf = vcat(local_df, release_df, cols = :union)
@@ -212,41 +261,6 @@ isempty(goats) ? md"" :  Markdown.parse("Failed to analyze:\n\n" * join(goats,"\
 isempty(sheep) ? md"" : Markdown.parse("Analyses:\n\n" * join(sheep,"\n"))
 	
 
-# ╔═╡ 32823b4c-a783-4034-94d7-5975cd38e9cf
-(kanonesversion, lsjminingversion) = begin
-	
-	
-	open(preparsed_data) do datafile
-		kversion = ""
-		lsjversion = ""
-		linenum = 0
-		for l in eachline(datafile)
-        	linenum += 1
-			if startswith(l, "kanones_version")
-				kversion = l
-			elseif startswith(l, "lsjmining_version")
-				lsjversion = l
-			end
-			if (! isempty(kversion)) && (! isempty(lsjversion))
-				break
-			end
-		end
-		(kversion, lsjversion)
-	end
-	
-end
-
-# ╔═╡ da4d9984-8d64-4404-a1db-cc8ebc5c08ee
-md"""
-
-!!! note "Version info: built with...."
-
-
-
-- **Kanones**:  *$(kanonesversion)*
-- **LSJMining**: *$(lsjminingversion)*
-"""
-
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -273,7 +287,7 @@ PolytonicGreek = "~0.17.19"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.7.0"
+julia_version = "1.7.2"
 manifest_format = "2.0"
 
 [[deps.ANSIColoredPrinters]]
@@ -875,6 +889,8 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╔═╡ Cell order:
 # ╟─af87b45b-7c8e-4ee5-bb0b-aeba3d9fbe66
 # ╟─20cb2bd1-6d78-4a12-8a8a-b42cf5cb3768
+# ╟─e9ef6336-408f-4dfc-9369-5977af9c1862
+# ╟─7ee03e72-99cb-4491-a27c-66d9319fdc1a
 # ╟─7d439b45-b011-42a0-b1d8-3f6f15291821
 # ╟─da4d9984-8d64-4404-a1db-cc8ebc5c08ee
 # ╟─ff1d7fce-f0a6-11ec-1ea9-ad69df1ccad5
@@ -885,22 +901,22 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╟─8e28cb65-666b-48ca-831d-91d3e4752e5c
 # ╟─edd5e2d1-0b6f-4f1e-9b22-c4de90906845
 # ╟─637017c7-ccab-4e8e-b300-acb33ad9426e
-# ╟─e9ef6336-408f-4dfc-9369-5977af9c1862
 # ╟─061e4882-2f2e-4b05-a479-64b97aa2b9df
-# ╟─79186d4f-4f9f-4c32-b2fc-071e25476f29
-# ╟─301d5f87-8cea-4275-b4a6-ed7687423f1e
+# ╟─32823b4c-a783-4034-94d7-5975cd38e9cf
 # ╟─62e034d3-70d4-4088-b6b5-c8994da9e0cc
 # ╟─1dd77e72-f37d-4be7-ada3-b1c93f4f9f40
 # ╟─19474ec7-4c77-49fd-a970-84f415bc432a
 # ╟─9970ffb6-3075-4014-bdd9-aa560eac52d8
 # ╟─f2a8da64-ca42-4765-a3de-385e1ef5a238
-# ╟─7ee03e72-99cb-4491-a27c-66d9319fdc1a
+# ╟─301d5f87-8cea-4275-b4a6-ed7687423f1e
+# ╟─79186d4f-4f9f-4c32-b2fc-071e25476f29
+# ╟─8014ffff-ee16-4cf2-b8cd-bfe9af106fc7
 # ╟─a04b5782-09ea-4865-ac94-640d50cd1adc
+# ╟─de2d20d4-ef22-4541-81ef-1ae2dfedcb9a
+# ╟─a6a58d43-a5b4-4ce0-914f-19d8e5557dbf
+# ╟─11c25b1a-807d-4bba-bdc3-ae300e13462b
+# ╟─f1fdacc2-8ad4-4a63-9bb0-9d644839e686
 # ╟─a61d1226-ed4b-4fb4-89e5-d143bd773f83
 # ╟─d4520a66-f35c-4013-b333-a2437f220dd1
-# ╠═de2d20d4-ef22-4541-81ef-1ae2dfedcb9a
-# ╠═a6a58d43-a5b4-4ce0-914f-19d8e5557dbf
-# ╠═f1fdacc2-8ad4-4a63-9bb0-9d644839e686
-# ╟─32823b4c-a783-4034-94d7-5975cd38e9cf
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
